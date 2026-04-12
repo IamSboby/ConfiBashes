@@ -206,7 +206,19 @@ collect_config() {
 INFO
     echo
     ask AP_SSID     "Fallback AP network name (SSID)"  "PiSetup"
-    ask_secret AP_PASSWORD "Fallback AP password" 8
+
+    echo
+    warn "Security: an open AP lets anyone nearby connect and attempt SSH."
+    warn "A password limits access but you must remember it to connect later."
+    echo
+    if confirm "Protect the fallback AP with a WPA2 password?" y; then
+        ask_secret AP_PASSWORD "Fallback AP password (min 8 chars)" 8
+        AP_SECURED="yes"
+    else
+        AP_PASSWORD=""
+        AP_SECURED="no"
+        warn "Fallback AP will be open (no password). Make sure SSH is secured."
+    fi
 
     ask    AP_IP      "Fallback AP IP address for this Pi" "192.168.4.1"
     ask_int AP_CHANNEL "WiFi channel (1–13)"               6  1 13
@@ -242,7 +254,11 @@ confirm_config() {
     printf '  %-30s %s\n' "Ethernet interface:"    "$ETH_INTERFACE"
     printf '  %-30s %s\n' "WiFi interface:"        "$WIFI_INTERFACE"
     printf '  %-30s %s\n' "Fallback AP SSID:"      "$AP_SSID"
-    printf '  %-30s %s\n' "Fallback AP password:"  "${AP_PASSWORD//?/*}"
+    if [[ "$AP_SECURED" == "yes" ]]; then
+        printf '  %-30s %s\n' "Fallback AP security:"  "WPA2 (password set)"
+    else
+        printf '  %-30s %s\n' "Fallback AP security:"  "OPEN (no password)"
+    fi
     printf '  %-30s %s\n' "Fallback AP IP:"        "$AP_IP"
     printf '  %-30s %s\n' "AP WiFi channel:"       "$AP_CHANNEL"
     printf '  %-30s %s\n' "Connectivity host:"     "$CONNECTIVITY_HOST"
@@ -291,10 +307,17 @@ DHCP_WAIT="${DHCP_WAIT}"
 LOG_FILE="/var/log/netmanager.log"
 LOG_MAXSIZE_MB="${LOG_MAXSIZE_MB}"
 
+AP_SECURED="${AP_SECURED}"
+
 CONFIG_DIR="/etc/netmanager"
 STATE_FILE="/etc/netmanager/current-mode"
 CONF
-    chmod 600 "$CONFIG_FILE"   # protects AP password
+    # Only store password if one was set
+    if [[ "$AP_SECURED" == "no" ]]; then
+        chmod 644 "$CONFIG_FILE"   # no secret to protect
+    else
+        chmod 600 "$CONFIG_FILE"   # protects AP password
+    fi
     ok "Config written → $CONFIG_FILE"
 }
 
@@ -952,22 +975,37 @@ create_ap_nm_profile() {
     fi
 
     info "Creating AP profile '$AP_CON_NAME' …"
-    nmcli connection add \
-        type wifi \
-        ifname "$WIFI_INTERFACE" \
-        con-name "$AP_CON_NAME" \
-        autoconnect no \
-        ssid "$AP_SSID" \
-        mode ap \
-        ipv4.method shared \
-        ipv4.addresses "${AP_IP}/24" \
-        ipv6.method disabled \
-        wifi-sec.key-mgmt wpa-psk \
-        wifi-sec.psk "$AP_PASSWORD" \
-        802-11-wireless.band bg \
-        802-11-wireless.channel "$AP_CHANNEL"
-
-    ok "AP profile '$AP_CON_NAME' created  (SSID='${AP_SSID}', IP=${AP_IP})"
+    if [[ "$AP_SECURED" == "yes" ]]; then
+        nmcli connection add \
+            type wifi \
+            ifname "$WIFI_INTERFACE" \
+            con-name "$AP_CON_NAME" \
+            autoconnect no \
+            ssid "$AP_SSID" \
+            mode ap \
+            ipv4.method shared \
+            ipv4.addresses "${AP_IP}/24" \
+            ipv6.method disabled \
+            wifi-sec.key-mgmt wpa-psk \
+            wifi-sec.psk "$AP_PASSWORD" \
+            802-11-wireless.band bg \
+            802-11-wireless.channel "$AP_CHANNEL"
+        ok "AP profile created (SSID='${AP_SSID}', IP=${AP_IP}, WPA2)"
+    else
+        nmcli connection add \
+            type wifi \
+            ifname "$WIFI_INTERFACE" \
+            con-name "$AP_CON_NAME" \
+            autoconnect no \
+            ssid "$AP_SSID" \
+            mode ap \
+            ipv4.method shared \
+            ipv4.addresses "${AP_IP}/24" \
+            ipv6.method disabled \
+            802-11-wireless.band bg \
+            802-11-wireless.channel "$AP_CHANNEL"
+        warn "AP profile created (SSID='${AP_SSID}', IP=${AP_IP}, OPEN — no password)"
+    fi
 }
 
 # ── Enable & start service ────────────────────────────────────────────────────
@@ -1007,8 +1045,9 @@ print_summary() {
     1. On every boot the daemon checks for Ethernet connectivity first.
     2. If Ethernet is found, it is used and kept prioritised automatically.
     3. If only WiFi is available, WiFi is used.
-    4. If neither works, the fallback AP '${AP_SSID}' appears.
-    5. Connect to '${AP_SSID}' (password hidden) and SSH in:
+    4. If neither works, the fallback AP '${AP_SSID}' appears
+       (${AP_SECURED/yes/WPA2 password protected}${AP_SECURED/no/open — no password}).
+    5. Connect to '${AP_SSID}' and SSH in:
          ssh ${AP_SSH_USER}@${AP_IP} -p ${SSH_PORT}
     6. Run the wizard:
          sudo wifi-provision.sh
