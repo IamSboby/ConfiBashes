@@ -43,7 +43,7 @@ On every boot, it checks for connectivity in order: **Ethernet → Wi-Fi → Fal
 
 The fallback hotspot can be protected with a **WPA2 password** or left **open** (no password). An open hotspot is convenient for home setups since SSH still requires valid credentials; a password is recommended in shared or public environments.
 
-### Usage
+### How to run it
 
 ```bash
 sudo bash Net-Fallback.sh
@@ -61,13 +61,63 @@ sudo wifi-provision.sh
 - NetworkManager (`nmcli`) — installed automatically if missing
 - OpenSSH server — installed automatically if missing
 
+### What gets installed
+
+| File | Purpose |
+|---|---|
+| `/etc/netmanager/netmanager.conf` | All runtime settings (interfaces, AP name, timeouts, …) |
+| `/usr/local/bin/netmanager.sh` | Boot-time daemon — the network priority logic |
+| `/usr/local/bin/wifi-provision.sh` | Interactive SSH wizard to configure a new Wi-Fi network |
+| `/etc/systemd/system/netmanager.service` | Starts the daemon at boot, restarts it on crash |
+| `/etc/update-motd.d/99-netmanager` | Login banner showing current network mode and SSH instructions |
+
+The AP hotspot profile is stored as a standard NetworkManager connection and can be listed with `nmcli connection show`.
+
 ---
 
-### Requirements
+### Changing the configuration
 
-- Raspberry Pi OS Lite (Bookworm / Debian 12)
-- NetworkManager (`nmcli`) — installed automatically if missing
-- OpenSSH server — installed automatically if missing
+All settings live in one file:
+
+```bash
+sudo nano /etc/netmanager/netmanager.conf
+```
+
+After saving, restart the service to apply changes:
+
+```bash
+sudo systemctl restart netmanager
+```
+
+**Common things you may want to change:**
+
+- **`AP_SSID` / `AP_PASSWORD`** — rename the fallback hotspot or change its password. After editing, also update the NetworkManager profile to match:
+  ```bash
+  sudo nmcli connection modify netmanager-ap ssid "NewName"
+  sudo nmcli connection modify netmanager-ap wifi-sec.psk "newpassword"
+  ```
+
+- **`CHECK_INTERVAL`** — how often (in seconds) the daemon checks whether a better connection is available. Lower values mean faster automatic switching, higher values reduce CPU wake-ups.
+
+- **`CONNECTIVITY_HOST`** — the IP or hostname pinged to verify real internet access. Change it if `1.1.1.1` is blocked on your network.
+
+- **`ETH_INTERFACE` / `WIFI_INTERFACE`** — if your Pi uses non-standard interface names (e.g. `enp1s0` instead of `eth0`), update these to match. Run `ip link` to list available interfaces.
+
+- **`SSH_PORT`** — if you moved SSH to a non-standard port, set it here so the login banner shows the correct connection command.
+
+To check the current network mode at any time:
+
+```bash
+cat /etc/netmanager/current-mode   # prints: ethernet | wifi | ap
+```
+
+To watch the live log:
+
+```bash
+sudo journalctl -u netmanager -f
+```
+
+---
 ## Notes
 
 - Scripts are written for personal use but shared openly — adapt them freely to your own setup.
