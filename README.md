@@ -19,7 +19,7 @@ cd ConfiBashes
 Make a script executable and run it:
 
 ```bash
-chmod +x /file.sh
+chmod +x file.sh
 ./file.sh
 ```
 
