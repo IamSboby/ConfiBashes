@@ -46,7 +46,7 @@ The fallback hotspot can be protected with a **WPA2 password** or left **open** 
 ### Usage
 
 ```bash
-sudo bash netmanager-install.sh
+sudo net-Fallback.sh
 ```
 
 Follow the prompts. When the fallback hotspot is active, connect to it and run:
