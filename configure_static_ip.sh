@@ -901,10 +901,12 @@ print_summary() {
 main() {
     clear
     echo -e "${BOLD}${CYAN}"
-    echo "╔══════════════════════════════════════════════════════════════════╗"
-    echo "║       Raspberry Pi OS — Static IP Configurator  v2.0             ║"
-    echo "║                  Made by IamSboby(GitHub)                        ║"
-    echo "╚══════════════════════════════════════════════════════════════════╝"
+    echo "╔════════════════════════════════════════════════════════════════════════════════════╗"
+    echo "║                     Sboby — Static IP Configurator  v2.0                           ║"
+    echo "║                          Made by IamSboby(GitHub)                                  ║"
+    echo "╠════════════════════════════════════════════════════════════════════════════════════╣"
+    echo "║ ReadMe:github.com/IamSboby/ConfiBashes?tab=readme-ov-file#static-ipv4-configurator ║"
+    echo "╚════════════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${RESET}"
  
     check_root "$@"
