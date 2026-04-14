@@ -33,6 +33,8 @@ chmod +x file.sh
 | `minidlna.sh` | Raspberry Pi | Base dlna configuration and hardening |
 | `configure_static_ip.sh` | Raspberry Pi | Basic Static IPv4 configurator with ntfy integration |
 | *(more coming)* | — | — |
+
+---
 <br><br>
 ---
 
@@ -118,10 +120,10 @@ To watch the live log:
 sudo journalctl -u netmanager -f
 ```
 
+
+---
 <br><br>
 ---
-
-
 
 ## Static IPv4 configurator
 
@@ -305,6 +307,7 @@ make static IP setup and remote IP notifications reliable enough to be genuinely
 
 ---
 <br><br>
+---
 ## Notes
 
 - Scripts are written for personal use but shared openly — adapt them freely to your own setup.
