@@ -34,7 +34,7 @@ chmod +x file.sh
 | *(more coming)* | — | — |
 
 ---
-
+<br><br>
 ## Smart Network Manager for Raspberry Pi OS Lite (Net-Fallback.sh)
 
 A single-script installer that gives your Raspberry Pi automatic, priority-based network management with a self-healing Wi-Fi setup flow.
@@ -118,6 +118,191 @@ sudo journalctl -u netmanager -f
 ```
 
 ---
+<br><br>
+
+
+## Static IPv4 configurator
+
+This project provides a production-oriented Bash script for Raspberry Pi OS (Debian-based) that helps configure one or more network interfaces with a preferred local static IPv4 address.
+
+Its main goal is to make a Raspberry Pi easier to find and access on a LAN by ensuring it always tries to use a predictable private IP address, while also notifying the user through **ntfy** whenever:
+
+- the configuration is successfully applied
+- the preferred IP cannot be applied
+- connectivity checks fail
+- the Raspberry Pi connects to a network in the future
+
+The script is designed to work interactively, safely, and with rollback logic, so it can be used on real Raspberry Pi systems without hardcoding environment-specific values.
+
+### Main features
+
+- Interactive setup for **one or multiple interfaces**
+- Validation of **private IPv4 addresses**
+- Support for both:
+  - **dhcpcd**
+  - **NetworkManager**
+- Automatic installation of missing dependencies
+- Connectivity verification after configuration
+- Automatic rollback on failure
+- **ntfy** notifications for both success and failure
+- Persistent connect hooks so the Pi sends an IP status message every time it gets online again
+
+---
+
+## What the script installs
+
+The script checks for required tools and installs missing packages automatically using `apt`.
+
+Typical dependencies include:
+
+- `iproute2` — used for interface and IP inspection
+- `curl` — used for public IP lookup and ntfy requests
+- `gawk` — used for safe config file editing
+- `iputils-ping` — used for connectivity tests
+- `wireless-tools` — used for Wi-Fi SSID detection on wireless interfaces
+
+It does **not** force-install or replace the system networking stack.  
+Instead, it detects and uses the networking backend already present on the system, typically:
+
+- `dhcpcd` on older Raspberry Pi OS releases
+- `NetworkManager` on newer Raspberry Pi OS releases
+
+---
+
+## How configuration works
+
+The script asks the user for all relevant values at runtime, including:
+
+- target interface
+- preferred local static IPv4 address
+- subnet prefix
+- gateway
+- DNS servers
+- ntfy server
+- ntfy topic
+- optional ntfy bearer token
+
+After collecting and validating the inputs, it applies the configuration using the active networking backend.
+
+### If the system uses `dhcpcd`
+The script updates `/etc/dhcpcd.conf` by replacing or recreating the block for the selected interface with a clean static configuration.
+
+### If the system uses `NetworkManager`
+The script updates the matching connection profile through `nmcli`, or creates one when needed.
+
+After applying the settings, the script verifies that:
+
+1. the interface received the preferred IP
+2. the gateway is reachable
+3. external connectivity works
+
+If one of these checks fails, the script restores the previous configuration and sends a failure notification through ntfy.
+
+---
+
+## Configuration files created or modified
+
+### `/etc/dhcpcd.conf`
+Used only on systems managed by **dhcpcd**.
+
+The script edits the interface-specific static IP configuration here.  
+Before doing so, it creates a backup so it can restore the previous state if something goes wrong.
+
+---
+
+### NetworkManager connection profiles
+Used only on systems managed by **NetworkManager**.
+
+The script modifies the relevant connection using `nmcli` instead of manually editing low-level files.  
+This keeps the configuration aligned with how NetworkManager expects profiles to be managed.
+
+---
+
+### `/etc/ntfy-notify.conf`
+This file is created by the script to store the ntfy settings required for future automatic notifications.
+
+It typically contains:
+
+- ntfy server URL
+- ntfy topic
+- optional bearer token
+
+The file is stored with restricted permissions so credentials are not world-readable.
+
+This file is later used by the notification hook scripts, allowing the Raspberry Pi to send connection status messages automatically on future boots or reconnects without asking the user again.
+
+---
+
+## Persistent notification hooks
+
+To make notifications work not only during setup but also on every future network connection, the script installs a hook depending on the networking backend.
+
+### On NetworkManager systems
+A dispatcher script is installed at:
+
+`/etc/NetworkManager/dispatcher.d/99-ntfy-connect.sh`
+
+This hook runs on relevant network state changes such as interface activation or connectivity changes, then sends a message containing:
+
+- current local IP
+- current public IP
+- active interface
+- SSID, when Wi-Fi is being used
+
+---
+
+### On dhcpcd systems
+A dhcpcd hook is installed at:
+
+`/lib/dhcpcd/dhcpcd-hooks/99-ntfy-connect`
+
+If that location is not available, the script falls back to a compatible hook mechanism under `/etc/dhcpcd.exit-hook.d/`.
+
+This hook sends the same IP status message whenever the interface obtains or renews a valid lease.
+
+---
+
+## Notification contents
+
+Every ntfy notification sent by this project includes operational network information, so the Raspberry Pi can be reached remotely with minimal guesswork.
+
+Typical payload:
+
+- current local IP address
+- current public IP address
+- active interface
+- Wi-Fi SSID, when applicable
+
+This is especially useful for headless Raspberry Pi deployments, remote SSH access, or devices that may switch between Ethernet and Wi-Fi.
+
+---
+
+## Safety and recovery
+
+This project was designed with a “configure carefully, verify immediately, rollback if needed” approach.
+
+That means the script:
+
+- checks for root privileges
+- validates user input
+- avoids malformed or non-private IPv4 addresses
+- tests connectivity after applying changes
+- restores the old network configuration if validation fails
+- reports failures through ntfy
+
+This makes it much safer than blindly overwriting network files.
+
+---
+
+## Project note
+
+Roughly **80% of this file was vibe-coded** — then reviewed, structured, and cleaned up into a practical Bash workflow for real Raspberry Pi usage.
+
+So yes, the project has strong “vibe coding” energy, but the goal is still very concrete:  
+make static IP setup and remote IP notifications reliable enough to be genuinely useful.
+
+---
+<br><br>
 ## Notes
 
 - Scripts are written for personal use but shared openly — adapt them freely to your own setup.
