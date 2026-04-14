@@ -39,9 +39,9 @@ ok()     { printf '%b[OK]%b    %s\n'  "$GREEN"  "$NC" "$*"; }
 warn()   { printf '%b[WARN]%b  %s\n'  "$YELLOW" "$NC" "$*"; }
 err()    { printf '%b[ERROR]%b %s\n'  "$RED"    "$NC" "$*"; }
 header() {
-    printf '\n%b══════════════════════════════════════════════════%b\n' "$CYAN$BOLD" "$NC"
-    printf '%b  %s%b\n' "$CYAN$BOLD" "$*" "$NC"
-    printf '%b══════════════════════════════════════════════════%b\n\n' "$CYAN$BOLD" "$NC"
+    printf '\n%b╔══════════════════════════════════════════════════╗%b\n' "$CYAN$BOLD" "$NC"
+    printf '%b  ║         %s         ║%b\n' "$CYAN$BOLD" "$*" "$NC"
+    printf '%b  ╚══════════════════════════════════════════════════╝%b\n\n' "$CYAN$BOLD" "$NC"
 }
 
 # ── Interactive prompt helpers ─────────────────────────────────────────────────
@@ -1071,6 +1071,8 @@ MSG
 main() {
     clear
     header "Raspberry Pi OS Lite — Smart Network Manager Installer"
+    header "Infos an instructions can be found here: github.com/IamSboby/ConfiBashes?tab=readme-ov-file#smart-network-manager-for-raspberry-pi-os-lite-net-fallbacksh"
+    header "See more on my github ;)  github.com/IamSboby"
 
     check_root
     check_prerequisites
