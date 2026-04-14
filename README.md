@@ -31,6 +31,7 @@ chmod +x file.sh
 |---|---|---|
 | `net-Fallback.sh` | Raspberry Pi | Smart network switcher: Ethernet first, then Wi-Fi, then fallback hotspot. |
 | `minidlna.sh` | Raspberry Pi | Base dlna configuration and hardening |
+| `configure_static_ip.sh` | Raspberry Pi | Basic Static IPv4 configurator with ntfy integration |
 | *(more coming)* | — | — |
 
 ---
