@@ -33,9 +33,9 @@ chmod +x file.sh
 | `minidlna.sh` | Raspberry Pi | Base dlna configuration and hardening |
 | `configure_static_ip.sh` | Raspberry Pi | Basic Static IPv4 configurator with ntfy integration |
 | *(more coming)* | — | — |
-
----
 <br><br>
+---
+
 ## Smart Network Manager for Raspberry Pi OS Lite (Net-Fallback.sh)
 
 A single-script installer that gives your Raspberry Pi automatic, priority-based network management with a self-healing Wi-Fi setup flow.
@@ -118,8 +118,9 @@ To watch the live log:
 sudo journalctl -u netmanager -f
 ```
 
----
 <br><br>
+---
+
 
 
 ## Static IPv4 configurator
